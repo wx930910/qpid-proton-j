@@ -26,111 +26,93 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class EndpointImplTest
-{
-    @Test
-    public void testRepeatOpenDoesNotModifyEndpoint()
-    {
-        ConnectionImpl mockConnection = Mockito.mock(ConnectionImpl.class);
-        MockEndpointImpl endpoint = new MockEndpointImpl(mockConnection);
+public class EndpointImplTest {
+	@Test
+	public void testRepeatOpenDoesNotModifyEndpoint() {
+		ConnectionImpl mockConnection = Mockito.mock(ConnectionImpl.class);
+		EndpointImpl endpoint = Mockito.spy(EndpointImpl.class);
+		int[] endpointLocalOpenCallCount = new int[1];
+		int[] endpointLocalCloseCallCount = new int[1];
+		ConnectionImpl endpointConnectionImpl;
+		endpointConnectionImpl = mockConnection;
+		Mockito.doAnswer((stubInvo) -> {
+			endpointLocalOpenCallCount[0]++;
+			return null;
+		}).when(endpoint).localOpen();
+		Mockito.doAnswer((stubInvo) -> {
+			return endpointConnectionImpl;
+		}).when(endpoint).getConnectionImpl();
+		Mockito.doAnswer((stubInvo) -> {
+			endpointLocalCloseCallCount[0]++;
+			return null;
+		}).when(endpoint).localClose();
 
-        // Check starting state
-        assertFalse("Should not be modified", endpoint.isModified());
-        assertEquals("Unexpected localOpen call count", 0, endpoint.getLocalOpenCallCount());
-        Mockito.verify(mockConnection, Mockito.times(0)).addModified(Mockito.any(EndpointImpl.class));
+		// Check starting state
+		assertFalse("Should not be modified", endpoint.isModified());
+		assertEquals("Unexpected localOpen call count", 0, endpointLocalOpenCallCount[0]);
+		Mockito.verify(mockConnection, Mockito.times(0)).addModified(Mockito.any(EndpointImpl.class));
 
-        endpoint.open();
+		endpoint.open();
 
-        // Check endpoint was modified
-        assertTrue("Should be modified", endpoint.isModified());
-        assertEquals("Unexpected localOpen call count", 1, endpoint.getLocalOpenCallCount());
-        Mockito.verify(mockConnection, Mockito.times(1)).addModified(Mockito.any(EndpointImpl.class));
+		// Check endpoint was modified
+		assertTrue("Should be modified", endpoint.isModified());
+		assertEquals("Unexpected localOpen call count", 1, endpointLocalOpenCallCount[0]);
+		Mockito.verify(mockConnection, Mockito.times(1)).addModified(Mockito.any(EndpointImpl.class));
 
-        // Clear the modified state, open again, verify no change
-        endpoint.clearModified();
-        assertFalse("Should no longer be modified", endpoint.isModified());
+		// Clear the modified state, open again, verify no change
+		endpoint.clearModified();
+		assertFalse("Should no longer be modified", endpoint.isModified());
 
-        endpoint.open();
+		endpoint.open();
 
-        assertFalse("Should not be modified", endpoint.isModified());
-        assertEquals("Unexpected localOpen call count", 1, endpoint.getLocalOpenCallCount());
-        Mockito.verify(mockConnection, Mockito.times(1)).addModified(Mockito.any(EndpointImpl.class));
-    }
+		assertFalse("Should not be modified", endpoint.isModified());
+		assertEquals("Unexpected localOpen call count", 1, endpointLocalOpenCallCount[0]);
+		Mockito.verify(mockConnection, Mockito.times(1)).addModified(Mockito.any(EndpointImpl.class));
+	}
 
-    @Test
-    public void testRepeatCloseDoesNotModifyEndpoint()
-    {
-        ConnectionImpl mockConnection = Mockito.mock(ConnectionImpl.class);
-        MockEndpointImpl endpoint = new MockEndpointImpl(mockConnection);
+	@Test
+	public void testRepeatCloseDoesNotModifyEndpoint() {
+		ConnectionImpl mockConnection = Mockito.mock(ConnectionImpl.class);
+		EndpointImpl endpoint = Mockito.spy(EndpointImpl.class);
+		int[] endpointLocalOpenCallCount = new int[1];
+		int[] endpointLocalCloseCallCount = new int[1];
+		ConnectionImpl endpointConnectionImpl;
+		endpointConnectionImpl = mockConnection;
+		Mockito.doAnswer((stubInvo) -> {
+			endpointLocalOpenCallCount[0]++;
+			return null;
+		}).when(endpoint).localOpen();
+		Mockito.doAnswer((stubInvo) -> {
+			return endpointConnectionImpl;
+		}).when(endpoint).getConnectionImpl();
+		Mockito.doAnswer((stubInvo) -> {
+			endpointLocalCloseCallCount[0]++;
+			return null;
+		}).when(endpoint).localClose();
 
-        // Open endpoint, clear the modified state, verify current state
-        endpoint.open();
-        endpoint.clearModified();
-        assertFalse("Should no longer be modified", endpoint.isModified());
-        assertEquals("Unexpected localClose call count", 0, endpoint.getLocalCloseCallCount());
-        Mockito.verify(mockConnection, Mockito.times(1)).addModified(Mockito.any(EndpointImpl.class));
+		// Open endpoint, clear the modified state, verify current state
+		endpoint.open();
+		endpoint.clearModified();
+		assertFalse("Should no longer be modified", endpoint.isModified());
+		assertEquals("Unexpected localClose call count", 0, endpointLocalCloseCallCount[0]);
+		Mockito.verify(mockConnection, Mockito.times(1)).addModified(Mockito.any(EndpointImpl.class));
 
-        // Now close, verify changes
-        endpoint.close();
+		// Now close, verify changes
+		endpoint.close();
 
-        // Check endpoint was modified
-        assertTrue("Should be modified", endpoint.isModified());
-        assertEquals("Unexpected localClose call count", 1, endpoint.getLocalCloseCallCount());
-        Mockito.verify(mockConnection, Mockito.times(2)).addModified(Mockito.any(EndpointImpl.class));
+		// Check endpoint was modified
+		assertTrue("Should be modified", endpoint.isModified());
+		assertEquals("Unexpected localClose call count", 1, endpointLocalCloseCallCount[0]);
+		Mockito.verify(mockConnection, Mockito.times(2)).addModified(Mockito.any(EndpointImpl.class));
 
-        // Clear the modified state, close again, verify no change
-        endpoint.clearModified();
-        assertFalse("Should no longer be modified", endpoint.isModified());
+		// Clear the modified state, close again, verify no change
+		endpoint.clearModified();
+		assertFalse("Should no longer be modified", endpoint.isModified());
 
-        endpoint.close();
+		endpoint.close();
 
-        assertFalse("Should not be modified", endpoint.isModified());
-        assertEquals("Unexpected localClose call count", 1, endpoint.getLocalCloseCallCount());
-        Mockito.verify(mockConnection, Mockito.times(2)).addModified(Mockito.any(EndpointImpl.class));
-    }
-
-    private class MockEndpointImpl extends EndpointImpl
-    {
-        private int localOpenCallCount;
-        private int localCloseCallCount;
-        private ConnectionImpl connectionImpl;
-        public MockEndpointImpl(ConnectionImpl connectionImpl)
-        {
-            this.connectionImpl = connectionImpl;
-        }
-
-        @Override
-        void localOpen()
-        {
-            localOpenCallCount++;
-        }
-
-        @Override
-        void localClose()
-        {
-            localCloseCallCount++;
-        }
-
-        @Override
-        protected ConnectionImpl getConnectionImpl()
-        {
-            return connectionImpl;
-        }
-
-        @Override
-        void doFree() { }
-
-        @Override
-        void postFinal() { }
-
-        public int getLocalOpenCallCount()
-        {
-            return localOpenCallCount;
-        }
-
-        public int getLocalCloseCallCount()
-        {
-            return localCloseCallCount;
-        }
-    }
+		assertFalse("Should not be modified", endpoint.isModified());
+		assertEquals("Unexpected localClose call count", 1, endpointLocalCloseCallCount[0]);
+		Mockito.verify(mockConnection, Mockito.times(2)).addModified(Mockito.any(EndpointImpl.class));
+	}
 }

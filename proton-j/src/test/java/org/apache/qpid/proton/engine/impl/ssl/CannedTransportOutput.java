@@ -24,53 +24,44 @@ import java.nio.ByteBuffer;
 
 import org.apache.qpid.proton.engine.impl.TransportOutput;
 
-public class CannedTransportOutput implements TransportOutput
-{
+public class CannedTransportOutput implements TransportOutput {
 
-    private ByteBuffer _cannedOutput;
-    private ByteBuffer _head;
-    private int _popped;
+	private ByteBuffer _cannedOutput;
+	private ByteBuffer _head;
+	private int _popped;
 
-    public CannedTransportOutput()
-    {
-    }
+	public CannedTransportOutput() {
+	}
 
-    public CannedTransportOutput(String output)
-    {
-        setOutput(output);
-    }
+	public CannedTransportOutput(String output) {
+		setOutput(output);
+	}
 
-    public void setOutput(String output)
-    {
-        _cannedOutput = ByteBuffer.wrap(output.getBytes());
-        _head = _cannedOutput.asReadOnlyBuffer();
-        _popped = 0;
-    }
+	public void setOutput(String output) {
+		_cannedOutput = ByteBuffer.wrap(output.getBytes());
+		_head = _cannedOutput.asReadOnlyBuffer();
+		_popped = 0;
+	}
 
-    @Override
-    public int pending()
-    {
-        return _head.remaining();
-    }
+	@Override
+	public int pending() {
+		return _head.remaining();
+	}
 
-    @Override
-    public ByteBuffer head()
-    {
-        return _head;
-    }
+	@Override
+	public ByteBuffer head() {
+		return _head;
+	}
 
-    @Override
-    public void pop(int bytes)
-    {
-        _popped += bytes;
-        _head.position(_popped);
-    }
+	@Override
+	public void pop(int bytes) {
+		_popped += bytes;
+		_head.position(_popped);
+	}
 
-    @Override
-    public void close_head()
-    {
-        // do nothing
-    }
-
+	@Override
+	public void close_head() {
+		// do nothing
+	}
 
 }

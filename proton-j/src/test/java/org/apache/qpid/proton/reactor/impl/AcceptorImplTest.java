@@ -21,6 +21,8 @@
 
 package org.apache.qpid.proton.reactor.impl;
 
+import static org.mockito.Mockito.*;
+
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 
@@ -31,57 +33,65 @@ import org.mockito.Mockito;
 
 public class AcceptorImplTest {
 
-    /**
-     * Tests that if ServerSocketChannel.accept() throws an IOException the Acceptor will
-     * call Selectable.error() on it's underlying selector.
-     * @throws IOException
-     */
-    @Test
-    public void acceptThrowsException() throws IOException {
-        final Callback mockCallback = Mockito.mock(Callback.class);
-        final SelectableImpl selectable = new SelectableImpl();
-        selectable.onError(mockCallback);
-        ReactorImpl mockReactor = Mockito.mock(ReactorImpl.class);
-        class MockIO extends IOImpl {
-            @Override
-            public ServerSocketChannel serverSocketChannel() throws IOException {
-                ServerSocketChannel result = Mockito.mock(ServerSocketChannel.class);
-                Mockito.when(result.accept()).thenThrow(new IOException());
-                return result;
-            }
-        }
-        IO mockIO = new MockIO();
-        Mockito.when(mockReactor.getIO()).thenReturn(mockIO);
-        Mockito.when(mockReactor.selectable(Mockito.any(ReactorChild.class))).thenReturn(selectable);
-        new AcceptorImpl(mockReactor, "host", 1234, null);
-        selectable.readable();
-        Mockito.verify(mockCallback).run(selectable);
-    }
+	public IOImpl mockIOImpl2() throws Exception {
+		IOImpl mockInstance = spy(IOImpl.class);
+		doAnswer((stubInvo) -> {
+			ServerSocketChannel result = Mockito.mock(ServerSocketChannel.class);
+			when(result.accept()).thenReturn(null);
+			return result;
+		}).when(mockInstance).serverSocketChannel();
+		return mockInstance;
+	}
 
-    /**
-     * Tests that if ServerSocketChannel.accept() returns <code>null</code> the Acceptor will
-     * throw a ReactorInternalException (because the acceptor's underlying selectable should
-     * not have been marked as readable, if there is no connection to accept).
-     * @throws IOException
-     */
-    @Test(expected=ReactorInternalException.class)
-    public void acceptReturnsNull() throws IOException {
-        final Callback mockCallback = Mockito.mock(Callback.class);
-        final SelectableImpl selectable = new SelectableImpl();
-        selectable.onError(mockCallback);
-        ReactorImpl mockReactor = Mockito.mock(ReactorImpl.class);
-        class MockIO extends IOImpl {
-            @Override
-            public ServerSocketChannel serverSocketChannel() throws IOException {
-                ServerSocketChannel result = Mockito.mock(ServerSocketChannel.class);
-                Mockito.when(result.accept()).thenReturn(null);
-                return result;
-            }
-        }
-        IO mockIO = new MockIO();
-        Mockito.when(mockReactor.getIO()).thenReturn(mockIO);
-        Mockito.when(mockReactor.selectable(Mockito.any(ReactorChild.class))).thenReturn(selectable);
-        new AcceptorImpl(mockReactor, "host", 1234, null);
-        selectable.readable();
-    }
+	public IOImpl mockIOImpl1() throws Exception {
+		IOImpl mockInstance = Mockito.spy(IOImpl.class);
+		Mockito.doAnswer((stubInvo) -> {
+			ServerSocketChannel result = Mockito.mock(ServerSocketChannel.class);
+			Mockito.when(result.accept()).thenThrow(new IOException());
+			return result;
+		}).when(mockInstance).serverSocketChannel();
+		return mockInstance;
+	}
+
+	/**
+	 * Tests that if ServerSocketChannel.accept() throws an IOException the Acceptor
+	 * will call Selectable.error() on it's underlying selector.
+	 * 
+	 * @throws IOException
+	 */
+	@Test
+	public void acceptThrowsException() throws IOException, Exception {
+		final Callback mockCallback = Mockito.mock(Callback.class);
+		final SelectableImpl selectable = new SelectableImpl();
+		selectable.onError(mockCallback);
+		ReactorImpl mockReactor = Mockito.mock(ReactorImpl.class);
+
+		IOImpl mockIO = mockIOImpl1();
+		Mockito.when(mockReactor.getIO()).thenReturn(mockIO);
+		Mockito.when(mockReactor.selectable(Mockito.any(ReactorChild.class))).thenReturn(selectable);
+		new AcceptorImpl(mockReactor, "host", 1234, null);
+		selectable.readable();
+		Mockito.verify(mockCallback).run(selectable);
+	}
+
+	/**
+	 * Tests that if ServerSocketChannel.accept() returns <code>null</code> the
+	 * Acceptor will throw a ReactorInternalException (because the acceptor's
+	 * underlying selectable should not have been marked as readable, if there is no
+	 * connection to accept).
+	 * 
+	 * @throws IOException
+	 */
+	@Test(expected = ReactorInternalException.class)
+	public void acceptReturnsNull() throws IOException, Exception {
+		final Callback mockCallback = Mockito.mock(Callback.class);
+		final SelectableImpl selectable = new SelectableImpl();
+		selectable.onError(mockCallback);
+		ReactorImpl mockReactor = Mockito.mock(ReactorImpl.class);
+		IOImpl mockIO = mockIOImpl2();
+		Mockito.when(mockReactor.getIO()).thenReturn(mockIO);
+		Mockito.when(mockReactor.selectable(Mockito.any(ReactorChild.class))).thenReturn(selectable);
+		new AcceptorImpl(mockReactor, "host", 1234, null);
+		selectable.readable();
+	}
 }
